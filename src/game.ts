@@ -346,7 +346,7 @@ function renderModePanel(context: RunContext): void {
       <div class="preview-stats"><div><span>РЕКОРД</span><strong>${storage.data.stats.bestEndless} м</strong></div><div><span>СЛОЖНОСТЬ</span><strong>НАРАСТАЕТ</strong></div></div>
       <button class="btn-play-small" data-action="start">▶ В свободный заезд</button>`;
   } else if (mode === 'progression') {
-    modePanel.innerHTML = `<div class="mode-copy"><span class="modal-kicker">ПРОГРЕССИЯ</span><h3>Бесконечный путь</h3><p>Трасса усложняется с каждым метром: холмы, трамплины, ямы, обрывы. До куда дойдёшь?</p></div>
+    modePanel.innerHTML = `<div class="mode-copy"><span class="modal-kicker">ОСНОВНОЙ УРОВЕНЬ</span><h3>Бесконечная гора</h3><p>Забирайся на гору как можно выше! Трасса усложняется с каждым метром: холмы, трамплины, ямы, обрывы. Твой рекорд высоты будет в таблице лидеров.</p></div>
       <div class="preview-stats"><div><span>РЕКОРД</span><strong>${storage.data.stats.bestEndless} м</strong></div><div><span>ТИПЫ</span><strong>8 ВИДОВ</strong></div></div>
       <button class="btn-play-small" data-action="start">▶ В путь</button>`;
   } else {
@@ -426,10 +426,10 @@ function progressionContext(): RunContext {
   return {
     config: { seed: 729183 + day, difficulty: 3, chunks: 999999, theme: 'pine', mode: 'progression', modifier: '' },
     id: 'progression',
-    name: 'Бесконечный путь',
-    region: 'ПРОГРЕССИЯ',
+    name: 'Бесконечная гора',
+    region: 'ОСНОВНОЙ УРОВЕНЬ',
     target: 0,
-    description: 'Трасса усложняется с каждым метром: холмы, подъёмы, трамплины, ямы, обрывы.',
+    description: 'Забирайся на гору как можно выше! Трасса усложняется с каждым метром: холмы, подъёмы, трамплины, ямы, обрывы.',
     campaignIndex: null,
   };
 }
@@ -614,12 +614,19 @@ function handleCrash(): void {
   platform.stop();
   audio.effect('crash');
   const distance = Math.max(0, Math.floor(sim.distance));
-  const distanceBonus = run.config.mode === 'endless' ? Math.floor(distance / 50) * 5 : 0;
+  const isEndlessMode = run.config.mode === 'endless' || run.config.mode === 'progression';
+  const distanceBonus = isEndlessMode ? Math.floor(distance / 50) * 5 : 0;
   resultReward = sim.coins + distanceBonus;
-  storage.recordRun(distance, true, resultReward, run.config.mode === 'endless');
+  storage.recordRun(distance, true, resultReward, isEndlessMode);
   void syncCloud();
   renderWallet();
-  const recordText = run.config.mode === 'endless' && distance >= storage.data.stats.bestEndless ? '<b>Новый рекорд дистанции!</b>' : 'Ещё одна попытка — ещё точнее.';
+  
+  // Submit score to leaderboard for progression mode (main infinite level)
+  if (run.config.mode === 'progression' && distance > 0) {
+    void platform.submit(distance);
+  }
+  
+  const recordText = isEndlessMode && distance >= storage.data.stats.bestEndless ? '<b>Новый рекорд дистанции!</b>' : 'Ещё одна попытка — ещё точнее.';
   showModal(`<span class="modal-kicker">ЗАЕЗД ОКОНЧЕН</span><h2>Гравитация победила.</h2><p>${recordText}</p>
     <div class="result-grid"><span>ДИСТАНЦИЯ <b>${distance} м</b></span><span>МОНЕТЫ <b>+${resultReward}</b></span><span>ВРЕМЯ <b>${formatTime(sim.elapsed)}</b></span></div>
     <div class="modal-actions"><button class="primary" data-action="restart">Попробовать снова</button>${rewardButton()}<button class="text-button" data-action="home">В меню</button></div>`, false);
@@ -767,7 +774,8 @@ function showRecords(): void {
     const record = storage.data.records[`campaign-${index}`];
     return `<tr><td>${String(index + 1).padStart(2, '0')}</td><td>${track.name}</td><td>${record ? formatTime(record.time) : '—'}</td><td>${record ? '★'.repeat(record.stars) : '—'}</td></tr>`;
   }).join('');
-  showModal(`<button class="modal-close" data-action="close-modal" aria-label="Закрыть">×</button><span class="modal-kicker">РЕКОРДЫ</span><h2>Твои достижения</h2><div class="record-summary"><span>ЗАЕЗДОВ <b>${storage.data.stats.runs}</b></span><span>ПРОЙДЕНО <b>${storage.data.stats.totalDistance} м</b></span><span>РЕКОРД <b>${storage.data.stats.bestEndless} м</b></span></div><div class="records-table"><table><thead><tr><th>#</th><th>Трасса</th><th>Время</th><th>Звёзды</th></tr></thead><tbody>${rows}</tbody></table></div>`, true);
+  const bestEndless = storage.data.stats.bestEndless;
+  showModal(`<button class="modal-close" data-action="close-modal" aria-label="Закрыть">×</button><span class="modal-kicker">РЕКОРДЫ</span><h2>Твои достижения</h2><div class="record-summary"><span>ЗАЕЗДОВ <b>${storage.data.stats.runs}</b></span><span>ПРОЙДЕНО <b>${storage.data.stats.totalDistance} м</b></span><span>РЕКОРД ГОРЫ <b>${bestEndless} м</b></span></div><div class="records-table"><table><thead><tr><th>#</th><th>Трасса</th><th>Время</th><th>Звёзды</th></tr></thead><tbody>${rows}</tbody></table></div><p style="color:#94a3b8;font-size:12px;margin-top:12px;text-align:center;">Рекорд «Бесконечной горы» отправляется в таблицу лидеров.</p>`, true);
 }
 
 function showHelp(): void {
