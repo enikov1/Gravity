@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "matter-js": ["C:/Users/kosta/.workbuddy-ai/binaries/node/workspace/node_modules/@types/matter-js/index.d.ts"],
+      "phaser": ["C:/Users/kosta/.workbuddy-ai/binaries/node/workspace/node_modules/phaser/types/phaser.d.ts"]
+    }
+  }
+}

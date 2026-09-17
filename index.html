@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="Gravity Defied — мотоциклетный триал. Найди баланс. Пройди свой путь.">
+<title>Gravity Defied</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%232e4438'/%3E%3Cpath d='M8 29L19 10l6 10 4-5 6 14H8' fill='none' stroke='%23e9ecce' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- Fullscreen game canvas -->
+<div id="game-canvas" aria-label="Игровая трасса" role="application" tabindex="0"></div>
+
+<!-- Loading screen -->
+<div class="loading" id="loading">
+  <div class="loading-spinner"></div>
+  <span>Загрузка...</span>
+</div>
+
+<!-- ===== MAIN MENU ===== -->
+<div class="screen menu-screen" id="menu-screen">
+  <div class="menu-bg"></div>
+  <div class="menu-content">
+    <div class="game-logo">
+      <h1>GRAVITY</h1>
+      <h2>DEFIED</h2>
+    </div>
+    <div class="menu-buttons">
+      <button class="btn-play" data-action="start"><span>▶</span> ИГРАТЬ</button>
+      <button class="btn-shop" data-action="garage">🛒 МАГАЗИН</button>
+      <button class="btn-leaderboard" data-action="records">🏆 ТАБЛИЦА</button>
+    </div>
+    <div class="menu-footer">
+      <button class="btn-icon" id="sound-button" data-action="sound" aria-label="Звук">🔊</button>
+      <span class="wallet"><span class="coin-icon"></span><b id="wallet">0</b></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TRACK SELECTION ===== -->
+<div class="screen track-screen hidden" id="track-screen">
+  <div class="screen-header">
+    <button class="btn-back" data-action="home">←</button>
+    <span class="screen-title">ВЫБОР ТРАССЫ</span>
+    <span class="wallet"><span class="coin-icon"></span><b id="wallet-track">0</b></span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button data-mode="campaign" class="active" role="tab" aria-selected="true">Кампания</button>
+    <button data-mode="progression" role="tab" aria-selected="false">Прогрессия</button>
+    <button data-mode="daily" role="tab" aria-selected="false">Испытание</button>
+    <button data-mode="endless" role="tab" aria-selected="false">Бесконечный</button>
+    <button data-mode="custom" role="tab" aria-selected="false">Свой</button>
+  </div>
+  <div class="track-grid" id="track-grid"></div>
+  <div class="mode-panel hidden" id="mode-panel"></div>
+  <div class="track-preview" id="track-preview">
+    <div class="preview-info">
+      <span class="region" id="scene-label">СЕВЕРНЫЙ ХРЕБЕТ</span>
+      <h3 id="track-name">Сосновый перевал</h3>
+      <p id="track-description">Первый след. Плавные холмы, свежий воздух.</p>
+      <div class="preview-stats">
+        <div><span>ДИСТАНЦИЯ</span><strong id="track-length">467 м</strong></div>
+        <div><span>СЛОЖНОСТЬ</span><strong class="difficulty-bars" id="difficulty-bars"><i></i><i></i><i></i><i></i><i></i></strong></div>
+      </div>
+      <button class="btn-play-small" data-action="start">▶ НА СТАРТ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RACE HUD ===== -->
+<div class="race-hud hidden" id="race-hud">
+  <div class="hud-top">
+    <button class="hud-btn" data-action="pause" aria-label="Пауза">⏸</button>
+    <div class="hud-progress">
+      <span id="race-track">Сосновый перевал</span>
+      <div class="progress-bar"><i id="progress-fill"></i></div>
+      <small id="race-distance">0 / 467 м</small>
+    </div>
+    <div class="hud-coins"><span class="coin-icon"></span><b id="race-coins">0</b></div>
+  </div>
+  <div class="hud-mid">
+    <div class="hud-time"><span>ВРЕМЯ</span><strong id="race-time">00:00.00</strong></div>
+  </div>
+  <div class="hud-durability" id="hud-durability">
+    <div class="durability-bar" id="durability-rear"><span>ЗАД</span><div><i></i></div></div>
+    <div class="durability-bar" id="durability-front"><span>ПЕРЕД</span><div><i></i></div></div>
+    <div class="durability-bar" id="durability-chassis"><span>РАМА</span><div><i></i></div></div>
+  </div>
+</div>
+
+<!-- Speedometer -->
+<div class="speedometer hidden" id="speedometer">
+  <b id="speed-value">0</b>
+  <span>км/ч</span>
+  <div id="speed-bars"></div>
+</div>
+
+<!-- Touch controls -->
+<div id="touch-controls" class="touch-controls hidden">
+  <div class="touch-left">
+    <button data-control="left" aria-label="Наклон назад">↺</button>
+    <button data-control="right" aria-label="Наклон вперёд">↻</button>
+  </div>
+  <div class="touch-right">
+    <button data-control="brake" aria-label="Тормоз">B</button>
+    <button data-control="gas" class="gas" aria-label="Газ">G</button>
+  </div>
+</div>
+
+<!-- Race tip -->
+<div id="race-tip" class="race-tip hidden">Удерживай газ для езды. Наклоняй для баланса.</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-backdrop hidden" id="modal-backdrop">
+  <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script type="module" src="/src/game.ts"></script>
+</body>
+</html>
